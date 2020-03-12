@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>UIMain</class>
+ <widget class="QMainWindow" name="UIMain">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="font">
+   <font>
+    <family>Ubuntu</family>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>IntelliTraffic</string>
+  </property>
+  <widget class="QWidget" name="centralwidget"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
