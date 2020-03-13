@@ -9,19 +9,28 @@ public class ACOAlgorithm
      * M : Number of ant siblings
      * 
      */
+
+    final double INITIAL_PHEROMONE = 1.0;
+    final double ALPHA=1.0;
+    final double BETA=1.0;
+    final double GAMMA=1.0;
+    final double DECAY_CONST=0.25;
+    final double MAX_PHEROMONE=10.0;
+
+
     private Graph graph;
 
-    private static class EdgeData
+    private  class EdgeData
     {
 
     }
 
-    private static class VertexData
+    private  class VertexData
     {
 
     }
 
-    private static class Graph
+    private  class Graph
     {
         private AdjacencyList adj_list;
         
@@ -41,12 +50,12 @@ public class ACOAlgorithm
         }
     }
 
-    private static class Path
+    private  class Path
     {
 
     }
 
-    public static class Vertex
+    public  class Vertex
     {
         private int index;
         private int id;
@@ -60,6 +69,7 @@ public class ACOAlgorithm
             this.nam = nam;
             this.data = data;
         }
+    
 
         public int getIndex()
         {
@@ -80,14 +90,25 @@ public class ACOAlgorithm
         {
             return data;
         }
+
+        public boolean equals(Object o){
+            Vertex V =(Vertex) o;
+            return V.id==id;
+        }
+
     }
 
-    private static class Edge
+    private class Edge
     {
         private Vertex from;
         private Vertex to;
         private double weight;
         private EdgeData data;
+        private double pheromone;
+        private double traffic_density;
+        private double attractiveness;
+         
+        
 
         public Edge(Vertex from, Vertex to, double weight, EdgeData data)
         {
@@ -95,6 +116,10 @@ public class ACOAlgorithm
             this.to = to;
             this.weight = weight;
             this.data = data;
+            this.pheromone = INITIAL_PHEROMONE;
+            this.attractiveness=0.0;
+            this.traffic_density=0.0;
+
         }
 
         public Vertex from()
@@ -116,33 +141,64 @@ public class ACOAlgorithm
         {
             return weight;
         }
+
+        public double getPheromone(){
+            return pheromone;
+        }
+        public double getAttractiveness(){
+            return attractiveness;
+        }
+        public double getTrafficDensity(){
+            return traffic_density;
+        }
+        public void setPheromone(){
+            this.pheromone=pheromone;
+            
+        }
+        public void setAttractiveness(){
+            this.attractiveness= attractiveness;
+            
+        }
+        public void setTrafficDensity(){
+            this.traffic_density=traffic_density;
+          
+        }
+
     }
 
-    private static class NeighborList
+    private  class NeighborList
     {
         private Vertex vertex;
-
-        private ArrayList<Vertex> neighborlist;
+        private ArrayList<Edge> neighborlist;
+        
+        public Edge getNeighbor(int index){
+            Iterator<Edge> iter = neighborlist.iterator();
+            for (Edge e : neighborlist) {
+                if(e.to.index==index) return e;
+            }
+            return null;
+        }
+        
         public NeighborList(Vertex vertex)
         {
             neighborlist = new ArrayList<Vertex>();
             this.vertex = vertex;
         }
 
-        public void addNeighbor(Vertex v)
+        public void addNeighbor(Edge e)
         {
-            neighborlist.add(v);
+            neighborlist.add(e);
         }
 
         public boolean isNeighbor(Vertex v)
         {
-            for(Vertex neighbor : neighborlist)
-                if(neighbor.equals(v))
+            for(Edge neighbor : neighborlist)
+                if(neighbor.to.equals(v))
                     return true;
             return false;
         }
 
-        public ArrayList<Vertex> getList()
+        public ArrayList<Edge> getList()
         {
             return neighborlist;
         }
@@ -153,7 +209,7 @@ public class ACOAlgorithm
         }
     }
 
-    private static class AdjacencyList
+    private  class AdjacencyList
     {
         private NeighborList[] adj_list;
         private Vertex[] vertices;
@@ -173,7 +229,7 @@ public class ACOAlgorithm
 
         public void addEdge(Edge e)
         {
-            adj_list[e.from.getID()].addNeighbor(e.to);
+            adj_list[e.from.getID()].addNeighbor(e);
         }
 
         public NeighborList getNeighborList(int id)
@@ -333,28 +389,79 @@ public class ACOAlgorithm
         this.graph = graph;
     }
 
-    public void findShortestPath(int src, int dest)
+    public void findShortestPath(Vertex src, Vertex dest)
     {
         for( int gen=0; gen<N; gen++)
         {
-            Path explored_paths[] = generateSortedPaths();
-            updateShortestPath(explored_paths[0]);
-            updatePheromoneTrails(explored_paths);
+            Path explored_paths[] = generateSortedPaths(src, dest);
+            //updateShortestPath(explored_paths[0]);
+            //updatePheromoneTrails(explored_paths);
         }
     }
 
-    public Path generateSinglePath()
+    private Path generateSinglePath(Vertex src, Vertex dest)
     {
+        pre_calc_attractiveness();
         Path path = new Path();
-        for(int i=0; i<graph.V().length; i++)
-            pickNextUnvisitedVertex(path);
+        path.add(src);
+        Vertex vertex;
+        while(!(vertex = pickNextUnvisitedVertex(path)).equals(dest))
+            path.add(vertex);
+        path.add(dest);
         
         return path;
     }
 
-    public void pickNextUnvisitedVertex(Path path)
+    private void pre_calc_attractiveness()
     {
+      for(NeighborList nl:graph.E())
+      {
+          for(Edge e : nl.getList())
+          {
+              e.setAttractiveness(1.0/e.weigth);
+          }
+      }
+    }
+
+    private Vertex pickNextUnvisitedVertex(Path path)
+    {
+        Vertex vertex=path.top();
+        ArrayList<Edge> neighbor_row = graph.adj_list.getNeighborList(path.top()).getList();
         
+        for(Edge neighbor : neighbor_row)
+        {
+            for(Vertex v : path.getList())
+            {
+                if(neighbor.to.equals(v))
+                {
+                    neighbor.pheromone = 0.0;
+                    break;
+                }
+            }
+        }
+
+        ArrayList<Double> prob_list=new ArrayList<Double>();
+        double normalizer=0.0;
+        double prob=0.0;
+        for(Edge e:neighbor_row)
+        {
+            prob = sigma(e.pheromone,e.attractiveness,e.traffic_density);
+            prob_list.add(prob);
+            normalizer += prob;
+        }
+
+        for(int i=0;i<prob_list.size();i++)
+        {
+           prob_list.set(i,prob_list.get(i)/normalizer);
+        }
+        int local_index=probable_choose(prob_list);
+        return neighbor_row.get(local_index);
+
+    }
+
+    private double sigma(double pheromone,double attractiveness,double traffic_density)
+    {
+        return math.pow(pheromone,ALPHA)*math.pow(attractiveness.BETA)*math.pow(traffic_density,GAMMA);
     }
 
     /* To debug the graph */
