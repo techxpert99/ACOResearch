@@ -11,6 +11,16 @@ public class ACOAlgorithm
      */
     private Graph graph;
 
+    private static class EdgeData
+    {
+
+    }
+
+    private static class VertexData
+    {
+
+    }
+
     private static class Graph
     {
         private AdjacencyList adj_list;
@@ -38,7 +48,38 @@ public class ACOAlgorithm
 
     public static class Vertex
     {
+        private int index;
+        private int id;
+        private String nam;
+        private VertexData data;
 
+        public Vertex(int index, int id, String nam, VertexData data)
+        {
+            this.index = index;
+            this.id = id;
+            this.nam = nam;
+            this.data = data;
+        }
+
+        public int getIndex()
+        {
+            return index;
+        }
+
+        public int getID()
+        {
+            return id;
+        }
+
+        public String getName()
+        {
+            return nam;
+        }
+
+        public VertexData getData()
+        {
+            return data;
+        }
     }
 
     private static class Edge
@@ -117,17 +158,17 @@ public class ACOAlgorithm
         private NeighborList[] adj_list;
         private Vertex[] vertices;
 
-        public AdjacencyList(HashSet<Vertex> vertex_set)
+        public AdjacencyList(ArrayList<Vertex> vertex_list)
         {
-            adj_list = new NeighborList[vertex_set.size()];
-            Iterator<Vertex> iter = vertex_set.iterator();
+            adj_list = new NeighborList[vertex_list.size()];
+            Iterator<Vertex> iter = vertex_list.iterator();
             int index=0;
             while(iter.hasNext()){
                 adj_list[index] = new NeighborList(iter.next());
                 index++;
             }
-            vertices = new Integer[vertex_set.size()];
-            vertices = vertex_set.toArray(vertices);
+            vertices = new Vertex[vertex_list.size()];
+            vertices = vertex_list.toArray(vertices);
         }
 
         public void addEdge(Edge e)
@@ -190,12 +231,12 @@ public class ACOAlgorithm
     public void readAndSetGraph(String fnodes, String fedges) throws IOException
     {
         ArrayList<Vertex> vertex_list = scanNodes(fnodes);
-        ArrayList<Edge> edge_list = scanEdges(fedges, vertex_set);
+        ArrayList<Edge> edge_list = scanEdges(fedges, vertex_list);
 
         this.graph = createGraph(vertex_list, edge_list);
     }
 
-    private ArrayList<Vertex> scanNodes(String fnodes)
+    private ArrayList<Vertex> scanNodes(String fnodes) throws IOException
     {
         try
         {
@@ -203,39 +244,41 @@ public class ACOAlgorithm
             if(!node_file.exists())
                 throw new IOException("Error! Node file not found!");
             
-            FileInputStream node_stream = new FileInputStream(fname);
-            ArrayList<Vertex> vertex_set = new ArrayList<Vertex>();
+            FileInputStream node_stream = new FileInputStream(fnodes);
+            ArrayList<Vertex> vertex_list = new ArrayList<Vertex>();
             Scanner freader = new Scanner(node_stream);
+            int index=0;
             while(freader.hasNext())
             {
                 Vector<String> tokens = getTokens(freader.nextLine());
                 int id = Integer.parseInt(tokens.get(0));
                 String nam = tokens.get(1);
                 
-                Vertex vertex = new Vertex(id,nam,null); //Vertex Data to be added in later revisions
-                vertex_set.add(vertex);
+                Vertex vertex = new Vertex(index,id,nam,null); //Vertex Data to be added in later revisions
+                vertex_list.add(vertex);
+                index++;
             }
 
             freader.close();
-            return vertex_set;
+            return vertex_list;
         }
         catch(IOException ioe)
         {
             throw new IOException("Error! Unable to read node file");
         }
-
-        return null;
     }
 
-    private ArrayList<Edge> scanEdges(String fedges, ArrayList<Vertex> vertex_list)
+    private ArrayList<Edge> scanEdges(String fedges, ArrayList<Vertex> vertex_list) throws IOException
     {
         try
         {
+            ArrayList<Edge> edge_list = new ArrayList<Edge>();
+
             File edge_file = new File(fedges);
             if(!edge_file.exists())
                 throw new IOException("Error! Edge file not found!");
             
-            FileInputStream edge_stream = new FileInputStream(fname);
+            FileInputStream edge_stream = new FileInputStream(fedges);
             
             Scanner freader = new Scanner(edge_stream);
             while(freader.hasNext())
@@ -248,7 +291,7 @@ public class ACOAlgorithm
                 Vertex _from = findVertex(from,vertex_list);
                 Vertex _to = findVertex(to,vertex_list);
 
-                Edge edge = new Edge(_from, _to, null); //Add Edge Data later
+                Edge edge = new Edge(_from, _to, weight, null); //Add Edge Data later
                 edge_list.add(edge);
             }
 
@@ -260,8 +303,6 @@ public class ACOAlgorithm
         {
             throw new IOException("Error! Unable to read graph file");
         }
-
-        return null;
     }
 
     private Vertex findVertex(int id, ArrayList<Vertex> vertex_list)
@@ -294,14 +335,12 @@ public class ACOAlgorithm
 
     public void findShortestPath(int src, int dest)
     {
-        /*
         for( int gen=0; gen<N; gen++)
         {
             Path explored_paths[] = generateSortedPaths();
             updateShortestPath(explored_paths[0]);
             updatePheromoneTrails(explored_paths);
         }
-        */
     }
 
     public Path generateSinglePath()
@@ -318,10 +357,28 @@ public class ACOAlgorithm
         
     }
 
+    /* To debug the graph */
+    public void printGraph()
+    {
+        for(Vertex v : graph.V())
+            System.out.println(v.index + ","+ v.id + "," + v.nam);
+
+        System.out.println();
+
+        for(NeighborList n : graph.E())
+        {
+            System.out.println("## Neighbors of "+n.vertex.index+","+n.vertex.id+","+n.vertex.nam+":");
+            for(Vertex v : n.getList())
+                System.out.println(v.index + "," + v.id+","+v.nam);
+            System.out.println();
+        }
+    }
     public static void main(String[] args) throws IOException
     {
-        String fname="graph.csv";
+        String fnodes="sample_maps/map_1/nodes.csv";
+        String fedges="sample_maps/map_1/edges.csv";
         ACOAlgorithm aco = new ACOAlgorithm();
-        aco.readAndSetGraph(fname);
+        aco.readAndSetGraph(fnodes,fedges);
+        aco.printGraph();
     }
 }
