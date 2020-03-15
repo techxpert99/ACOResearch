@@ -36,6 +36,13 @@ public  class Graph
                 return v;
         return null;
     }
+
+    public void debug()
+    {
+        System.out.println("[Graph]");
+        adj_list.debug();
+        System.out.println("[/Graph]");
+    }
 }
 
 class NeighborList
@@ -78,6 +85,15 @@ class NeighborList
     public Vertex getVertex()
     {
         return vertex;
+    }
+
+    public void debug()
+    {
+        System.out.println("[NeighborList]");
+        vertex.debug();
+        for(Edge e:neighborlist)
+            e.debug();
+        System.out.println("[/NeighborList]");
     }
 }
 
@@ -127,5 +143,14 @@ class AdjacencyList
     public boolean isEdge(Vertex u, Vertex v)
     {
         return adj_list[u.getIndex()].isNeighbor(v);
+    }
+
+    public void debug()
+    {
+        System.out.println("[AdjacencyList]");
+        for(Vertex v : vertices)
+            v.debug();
+        for(NeighborList n : adj_list)
+            n.debug();
     }
 }

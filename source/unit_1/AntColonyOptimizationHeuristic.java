@@ -3,30 +3,53 @@ import java.util.*;
 
 public class AntColonyOptimizationHeuristic
 {
-    /**
-     * N : Number of generations of ants
-     * M : Number of ant siblings
-     * 
-     */
 
     public static final double INITIAL_PHEROMONE = 1.0;
     public static final double ALPHA=1.0;
     public static final double BETA=1.0;
-    public static final double GAMMA=1.0;
+    public static final double GAMMA=-1.0;
+    public static final double DELTA=1.0;
     public static final double DECAY_CONST=0.25;
     public static final double TRAIL_CONST=1.0;
-    
+
     public static final int MAX_ANTS = 8;
     public static final int MAX_GENERATIONS = 8;
     public static final int MAX_SELECTED = 4;
     public static final int MAX_FRAC_DIG = 5;
 
     private Graph graph;
-    private Path shortestPath;
+    private  ArrayList<ShortestPathElement> shortestPaths;
 
+    class ShortestPathElement
+    {
+        public ShortestPathElement(Path path, int weight)
+        {
+            this.path = path;
+            this.weight = weight;
+        }
+
+        public void incrementWeight()
+        {
+            weight++;
+        }
+
+        public int getWeight()
+        {
+            return weight;
+        }
+
+        public Path getPath()
+        {
+            return path;
+        }
+
+        private int weight;
+        private Path path; 
+    }
     public void readAndSetGraph(String fnodes, String fedges) throws IOException
     {
         this.graph = GraphReader.readGraph(fnodes, fedges);
+        pre_calc_attractiveness();
     }
 
     private void pre_calc_attractiveness()
@@ -36,9 +59,9 @@ public class AntColonyOptimizationHeuristic
               e.setAttractiveness(1.0/e.getWeight());
     }
 
-    private double calc_prob(double pheromone,double attractiveness,double traffic_density)
+    private double calc_prob(double pheromone, double attractiveness, double traffic_density, double edge_reliability)
     {
-        return Math.pow(pheromone,ALPHA)*Math.pow(attractiveness,BETA)*Math.pow(traffic_density,GAMMA);
+        return Math.pow(pheromone,ALPHA)*Math.pow(attractiveness,BETA)*Math.pow(traffic_density,GAMMA)*Math.pow(edge_reliability,DELTA);
     }
 
     private long getIntegralProb(double num)
@@ -49,13 +72,12 @@ public class AntColonyOptimizationHeuristic
     private int probable_choose(ArrayList<Double> prob_list)
     {
         //Converting Probability to Integer
-
-        ArrayList<Long> norm_prob_list=new ArrayList<Long>();
+        ArrayList<Long> norm_prob_list=new ArrayList<Long>(prob_list.size());
 
         for(int i=0; i<prob_list.size(); i++)
-            norm_prob_list.set(i,getIntegralProb(prob_list.get(i)));
+            norm_prob_list.add(i,getIntegralProb(prob_list.get(i)));
 
-        long seed = (long) Math.random(); 
+        long seed = (long) (Math.random() * Math.pow(2,63));
         
         //Normalizing seed
 
@@ -78,11 +100,13 @@ public class AntColonyOptimizationHeuristic
             prefix_sum+=prob;
         }
 
+        //Control Never Reaches Here
         return index;
     }
 
     private Edge pickNextUnvisitedVertex(Path path, Vertex source)
     {
+    
         ArrayList<Edge> neighbor_row;
 
         if(path.top()==null)
@@ -91,16 +115,35 @@ public class AntColonyOptimizationHeuristic
             neighbor_row = graph.getNeighbors(path.top().to()).getList();
         
         
+        if(neighbor_row==null || neighbor_row.size()==0)
+        {
+            path.invalidate();
+            return null;
+        }
+
+        boolean number_unvisited=false;
+
         for(Edge neighbor : neighbor_row)
         {
+            boolean visited=false;
             for(Edge e : path.getList())
             {
                 if(neighbor.equals(e))
                 {
                     neighbor.setPheromone(0.0);
+                    visited=true;
                     break;
                 }
             }
+
+            if(!visited)
+                number_unvisited=true;
+        }
+
+        if(!number_unvisited)
+        {
+            path.invalidate();
+            return null;
         }
 
         ArrayList<Double> prob_list=new ArrayList<Double>();
@@ -108,7 +151,7 @@ public class AntColonyOptimizationHeuristic
         double prob=0.0;
         for(Edge e:neighbor_row)
         {
-            prob = calc_prob(e.getPheromone(),e.getAttractiveness(),e.getTrafficDensity());
+            prob = calc_prob(e.getPheromone(),e.getAttractiveness(),e.getTrafficDensity(), e.getEdgeReliability());
             prob_list.add(prob);
             normalizer += prob;
         }
@@ -123,12 +166,12 @@ public class AntColonyOptimizationHeuristic
 
     private Path generateSinglePath(Vertex src, Vertex dest)
     {
-        pre_calc_attractiveness();
         Path path = new Path();
         Edge edge;
-        while(!((edge = pickNextUnvisitedVertex(path, src)).to().equals(dest)))
+        while(((edge = pickNextUnvisitedVertex(path, src))!=null)&&!edge.to().equals(dest))
             path.add(edge);
-        path.add(edge);
+        if(edge!=null)
+            path.add(edge);
         return path;
     }
 
@@ -148,8 +191,20 @@ public class AntColonyOptimizationHeuristic
     {
         if(shortest==null)
             return;
-        if(this.shortestPath==null || (this.shortestPath.getLength() > shortest.getLength()))
-            this.shortestPath=shortest;
+
+        boolean exists=false;
+        ShortestPathElement path_elem = new ShortestPathElement(null,0);
+        for(ShortestPathElement element : this.shortestPaths){
+            if(element.getPath().equals(shortest)){
+                exists=true;
+                path_elem=element;
+                break;
+        }}
+            
+        if(exists)
+            path_elem.incrementWeight();
+        else
+            this.shortestPaths.add(new ShortestPathElement(shortest, 1));
     }
     
     private  double calcPhermononeTrail(Path path)
@@ -162,7 +217,7 @@ public class AntColonyOptimizationHeuristic
         //Decaying previous pheromones
         for(NeighborList n : graph.E())
             for(Edge e : n.getList())
-                e.setPheromone((e.getPheromone() - INITIAL_PHEROMONE)*(1-DECAY_CONST));
+                e.setPheromone((e.getPheromone() - INITIAL_PHEROMONE)*(1-DECAY_CONST) + INITIAL_PHEROMONE);
         
         //Depositing new Pheromones
         for(int i=0; i<MAX_SELECTED; i++){
@@ -174,6 +229,7 @@ public class AntColonyOptimizationHeuristic
 
     public Path findShortestPath(Vertex src, Vertex dest)
     {
+
         for( int gen = 0; gen < MAX_GENERATIONS; gen++)
         {
             Path explored_paths[] = generateSortedPaths(src, dest);
@@ -181,11 +237,18 @@ public class AntColonyOptimizationHeuristic
             updatePheromoneTrails(explored_paths);
         }
 
-        return shortestPath;
+        ShortestPathElement minimum = shortestPaths.get(0);
+
+        for(ShortestPathElement element : shortestPaths)
+            if(element.getWeight()<minimum.getWeight())
+            minimum=element;
+
+        return minimum.getPath();
     }
 
     public Path findShortestPath(int src_id, int dest_id)
     {
+        shortestPaths = new ArrayList<ShortestPathElement>();
         return findShortestPath(graph.findVertex(src_id), graph.findVertex(dest_id));
     }
 }

@@ -40,6 +40,11 @@
             return V.id==id;
         }
 
+        /* Debug */
+        public void debug()
+        {
+            System.out.println("[Vertex]\nIndex:"+index+"\nName:"+nam+"Id:"+id+"\n[/Vertex]");
+        }
     }
 
 class VertexData

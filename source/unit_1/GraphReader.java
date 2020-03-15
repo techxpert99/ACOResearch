@@ -85,14 +85,20 @@ public class GraphReader
             while(freader.hasNext())
             {
                 Vector<String> tokens = getTokens(freader.nextLine());
-                int from = Integer.parseInt(tokens.get(0));
-                int to = Integer.parseInt(tokens.get(1));
-                double weight = Double.parseDouble(tokens.get(5));
-                //Edge Data to be added in later revisions
+                int eid= Integer.parseInt(tokens.get(0));
+                int from = Integer.parseInt(tokens.get(1));
+                int to = Integer.parseInt(tokens.get(2));
+                double weight = Double.parseDouble(tokens.get(3));
+                double traffic_density = Double.parseDouble(tokens.get(4));
+                double edge_reliability = Double.parseDouble(tokens.get(5));
+                String additional_info = tokens.get(6);
+
+
                 Vertex _from = findVertex(from,vertex_list);
                 Vertex _to = findVertex(to,vertex_list);
 
-                Edge edge = new Edge(_from, _to, weight, null); //Add Edge Data later
+                EdgeData data = new EdgeData(traffic_density, edge_reliability, additional_info);
+                Edge edge = new Edge(eid, _from, _to, weight, data);
                 edge_list.add(edge);
             }
 
