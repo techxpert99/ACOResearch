@@ -1,8 +1,22 @@
 import java.util.*;
 import java.io.*;
 
+/**
+* The GraphReader program reads graph by taking inputs from a file containing information about
+* nodes and another with information about nodes in the form of csv files.
+* @version 1.0
+* @date   17-03-2020
+*/
 public class GraphReader
-{
+{   
+    
+    /**
+    * The getTokens function returns a vector of tokens separeted by delimiters.
+    * @param line Line from the file to be tokenized.
+    * @return Vector of tokens
+    * @version 1.0
+    * @date   17-03-2020
+    */
     private static Vector<String> getTokens(String line)
     {
         String delimiters = ",\n";
@@ -24,6 +38,14 @@ public class GraphReader
         return tokens;
     }
     
+    /**
+    * Finds a vertex with given Id.
+    * @param id Id of the vertex to be found.
+    * @param vertex_list list of the vertices.
+    * @return required vertex with given Id.
+    * @version 1.0
+    * @date   17-03-2020
+    */
     private static Vertex findVertex(int id, ArrayList<Vertex> vertex_list)
     {
         Iterator<Vertex> iter = vertex_list.iterator();
@@ -36,7 +58,15 @@ public class GraphReader
 
         return null;
     }
-
+    
+    /**
+    * Scan the nodes file to get id and name of the vertices.
+    * @param fnodes Nodes file to be scanned.
+    * @return vertex_list ArrayList of vertices with their id and names.
+    * @throw IOException if file does not exist.
+    * @version 1.0
+    * @date   17-03-2020
+    */
     private static ArrayList<Vertex> scanNodes(String fnodes) throws IOException
     {
         try
@@ -68,7 +98,17 @@ public class GraphReader
             throw new IOException("Error! Unable to read node file");
         }
     }
-
+    
+    /**
+    * Scan the edges file to get edge id, initial node, final node, weight , 
+    * traffic density, edge reliability and other information of the edges.
+    * @param fedges Edge file to be scanned.
+    * @param vertex_list List of the vertices.
+    * @return ArrayList of edges with required attributes.
+    * @throw IOException If file does not exist.
+    * @version 1.0
+    * @date   17-03-2020
+    */
     private static ArrayList<Edge> scanEdges(String fedges, ArrayList<Vertex> vertex_list) throws IOException
     {
         try
@@ -111,7 +151,15 @@ public class GraphReader
             throw new IOException("Error! Unable to read graph file");
         }
     }
-
+    
+    /**
+    * Create a graph using the list of vertices and edges represented by an adjacency list.
+    * @param vertex_list List of vertices.
+    * @param edge_list List of edges.
+    * @return Graph represented by an adjacenecy list
+    * @version 1.0
+    * @date   17-03-2020
+    */    
     private static Graph createGraph(ArrayList<Vertex> vertex_list, ArrayList<Edge> edge_list)
     {
         AdjacencyList adj_list = new AdjacencyList(vertex_list);
