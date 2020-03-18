@@ -1,8 +1,24 @@
 <resources>
     <string name="app_name">iPath</string>
+
     <string name="access_token">pk.eyJ1IjoidGVjaHhwZXJ0IiwiYSI6ImNrN3Zuc2R5ODFjbXczb24xc2gzOTJqeHQifQ.sQCXSypR4BwyYEpejiZ_qg</string>
+
     <string name="user_location_permission_explanation">Allow this app to access your location</string>
     <string name="user_location_permission_not_granted">Location access denied</string>
+
     <string name="new_location">New Lat: %s New Long: %s</string>
-    <string name="button_go">GO</string>
+
+    <string name="button_search_content_desc">Search for Places</string>
+    <string name="button_go_content_desc">Go to places from your current location</string>
+    <string name="button_menu_content_desc">Application Menu</string>
+
+    <string name="button_search">Search for places</string>
+    <string name="button_go">Go</string>
+    <string name="button_menu">Menu</string>
+
+    <string name="search_source">Source</string>
+    <string name="search_destination">Destination</string>
+
+    <string name="search_source_text">Enter the source here</string>
+    <string name="search_destination_text">Enter the destination here</string>
 </resources>

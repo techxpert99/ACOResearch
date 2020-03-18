@@ -3,20 +3,28 @@ package com.ipath;
 import android.annotation.SuppressLint;
 import android.location.Location;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.SearchView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
+
 // Classes needed to initialize the map
+import com.google.android.material.textfield.TextInputEditText;
 import com.mapbox.mapboxsdk.Mapbox;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 import com.mapbox.mapboxsdk.maps.Style;
+
 // Classes needed to handle location permissions
 import com.mapbox.android.core.permissions.PermissionsListener;
 import com.mapbox.android.core.permissions.PermissionsManager;
 import java.util.List;
+
 // Classes needed to add the location engine
 import com.mapbox.android.core.location.LocationEngine;
 import com.mapbox.android.core.location.LocationEngineCallback;
@@ -24,26 +32,34 @@ import com.mapbox.android.core.location.LocationEngineProvider;
 import com.mapbox.android.core.location.LocationEngineRequest;
 import com.mapbox.android.core.location.LocationEngineResult;
 import java.lang.ref.WeakReference;
+
 // Classes needed to add the location component
 import com.mapbox.mapboxsdk.location.LocationComponent;
 import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions;
 import com.mapbox.mapboxsdk.location.modes.CameraMode;
 import com.mapbox.mapboxsdk.location.modes.RenderMode;
 
+import android.content.Intent;
+
 /**
  * Use the Mapbox Core Library to listen to device location updates
  */
 public class MainActivity extends AppCompatActivity implements
         OnMapReadyCallback, PermissionsListener {
+
     // Variables needed to initialize a map
     private MapboxMap mapboxMap;
     private MapView mapView;
+
+
     // Variables needed to handle location permissions
     private PermissionsManager permissionsManager;
+
     // Variables needed to add the location engine
     private LocationEngine locationEngine;
     private long DEFAULT_INTERVAL_IN_MILLISECONDS = 1000L;
     private long DEFAULT_MAX_WAIT_TIME = DEFAULT_INTERVAL_IN_MILLISECONDS * 5;
+
     // Variables needed to listen to location updates
     private MainActivityLocationCallback callback = new MainActivityLocationCallback(this);
 
@@ -51,16 +67,52 @@ public class MainActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-// Mapbox access token is configured here. This needs to be called either in your application
-// object or in the same activity which contains the mapview.
+        // Mapbox access token
         Mapbox.getInstance(this, getString(R.string.access_token));
 
-// This contains the MapView in XML and needs to be called after the access token is configured.
+        // MapView in XML
         setContentView(R.layout.activity_main);
 
         mapView = findViewById(R.id.mapView);
+
+        final SearchView search = findViewById(R.id.button_search);
+        final Button  go = findViewById(R.id.button_go);
+        final Button menu = findViewById(R.id.button_menu);
+
+        search.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        onSearchClicked();
+                    }
+                }
+        );
+
+        go.setOnClickListener(
+                new View.OnClickListener(){
+                    @Override
+                    public void onClick(View v) {
+                        onGoClicked();
+                    }
+                });
+
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(this);
+
+    }
+
+    private void onSearchClicked()
+    {
+        Intent intent = new Intent(this, SearchActivity.class);
+        intent.putExtra("setsrc", (String) null);
+        startActivity(intent);
+    }
+
+    private void onGoClicked()
+    {
+        Intent intent = new Intent(this, SearchActivity.class);
+        intent.putExtra("setsrc", "My Location");
+        startActivity(intent);
     }
 
     @Override
@@ -79,30 +131,32 @@ public class MainActivity extends AppCompatActivity implements
     /**
      * Initialize the Maps SDK's LocationComponent
      */
+
     @SuppressWarnings( {"MissingPermission"})
     private void enableLocationComponent(@NonNull Style loadedMapStyle) {
-// Check if permissions are enabled and if not request
+
+        // Check if permissions are enabled and if not request
         if (PermissionsManager.areLocationPermissionsGranted(this)) {
 
-// Get an instance of the component
+            // Get an instance of the component
             LocationComponent locationComponent = mapboxMap.getLocationComponent();
 
-// Set the LocationComponent activation options
+            // Set the LocationComponent activation options
             LocationComponentActivationOptions locationComponentActivationOptions =
                     LocationComponentActivationOptions.builder(this, loadedMapStyle)
                             .useDefaultLocationEngine(false)
                             .build();
 
-// Activate with the LocationComponentActivationOptions object
+            // Activate with the LocationComponentActivationOptions object
             locationComponent.activateLocationComponent(locationComponentActivationOptions);
 
-// Enable to make component visible
+            // Enable to make component visible
             locationComponent.setLocationComponentEnabled(true);
 
-// Set the component's camera mode
+            // Set the component's camera mode
             locationComponent.setCameraMode(CameraMode.TRACKING);
 
-// Set the component's render mode
+            // Set the component's render mode
             locationComponent.setRenderMode(RenderMode.COMPASS);
 
             initLocationEngine();
@@ -174,12 +228,12 @@ public class MainActivity extends AppCompatActivity implements
                     return;
                 }
 
-// Create a Toast which displays the new location's coordinates
+                // Create a Toast which displays the new location's coordinates
                 Toast.makeText(activity, String.format(activity.getString(R.string.new_location),
                         String.valueOf(result.getLastLocation().getLatitude()), String.valueOf(result.getLastLocation().getLongitude())),
                         Toast.LENGTH_SHORT).show();
 
-// Pass the new location to the Maps SDK's LocationComponent
+                // Pass the new location to the Maps SDK's LocationComponent
                 if (activity.mapboxMap != null && result.getLastLocation() != null) {
                     activity.mapboxMap.getLocationComponent().forceLocationUpdate(result.getLastLocation());
                 }
@@ -235,7 +289,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onDestroy() {
         super.onDestroy();
-// Prevent leaks
+        // Prevent leaks
         if (locationEngine != null) {
             locationEngine.removeLocationUpdates(callback);
         }
